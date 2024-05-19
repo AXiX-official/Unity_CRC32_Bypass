@@ -1,37 +1,37 @@
-﻿namespace Unity_CRC32_Bypass;
+﻿using UnityAsset.NET.BundleFile;
+
+namespace Unity_CRC32_Bypass;
 
 public class Program
 {
     public static void Main(string[] args)
     {
-        if (args.Length != 3)
+        if (args.Length <= 3)
         {
-            Console.WriteLine("Usage: <program> <original file path> <modified file path> <output path>");
+            Console.WriteLine("Usage: <program> <original file path> <modified file path> <output path> <compress type[default: none]>");
+            Console.WriteLine("Compress type: none, lz4, lzma, lz4hc");
             return;
         }
 
         string originalFilePath = args[0];
         string modifiedFilePath = args[1];
         string outputPath = args[2];
+        string compressType = args.Length > 3 ? args[3] : "none";
+        // convert to lower case
+        compressType = compressType.ToLower();
         
-        BundleFile originalBundleFile = new BundleFile(originalFilePath);
-        uint originalCRC = originalBundleFile.crc32;
-        Console.WriteLine("Original CRC32: 0x{0:X8}", originalCRC);
+        using FileStream originalFileStream = new FileStream(originalFilePath, FileMode.Open, FileAccess.Read);
+        BundleFile originalBundleFile = new BundleFile(originalFileStream);
+        var originalCrc = originalBundleFile.crc32;
+        Console.WriteLine($"Original CRC32: {originalCrc}");
         
-        BundleFile modifiedBundleFile = new BundleFile(modifiedFilePath);
-        uint modifiedCRC = modifiedBundleFile.crc32; 
-        Console.WriteLine("Modified CRC32: 0x{0:X8}", modifiedCRC);
+        using FileStream modifiedFileStream = new FileStream(modifiedFilePath, FileMode.Open, FileAccess.Read);
+        BundleFile modifiedBundleFile = new BundleFile(modifiedFileStream);
+        var modifiedCrc = originalBundleFile.crc32;
+        Console.WriteLine($"Original CRC32: {modifiedCrc}");
         
-        uint append = CRC32.rCRC(originalCRC, modifiedCRC);
-        modifiedBundleFile.append(append);
-        uint newCRC = modifiedBundleFile.crc32;
-        if (newCRC != originalCRC)
-        {
-            throw new Exception("Fix CRC failed!CRC32 mismatch!");
-        }
-        Console.WriteLine("CRC32 fixed successfully!");
-        Console.WriteLine("New CRC32: 0x{0:X8}", newCRC);
-        modifiedBundleFile.WriteToFile(outputPath);
-        Console.WriteLine("Output file saved to: {0}", outputPath);
+        modifiedBundleFile.fixCRC(originalCrc, modifiedCrc);
+        using FileStream outputFileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write);
+        modifiedBundleFile.Write(originalFileStream, infoPacker: compressType, dataPacker: compressType);
     }
 }

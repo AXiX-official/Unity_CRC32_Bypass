@@ -7,4 +7,8 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="UnityAsset.NET" Version="0.0.3" />
+    </ItemGroup>
+
 </Project>

@@ -8,7 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="UnityAsset.NET" Version="0.0.3" />
+      <PackageReference Include="UnityAsset.NET" Version="0.0.4-beta.2" />
     </ItemGroup>
 
 </Project>

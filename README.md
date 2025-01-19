@@ -1,5 +1,7 @@
 # Unity CRC32 Bypass
 
+[<img src="https://api.gitsponsors.com/api/badge/img?id=791535788" height="20">](https://api.gitsponsors.com/api/badge/link?p=jMnlzmZqgzK5IRC0oAyMHmH0H+1xPuf3bXgu/nyXhaLnQfP84upNyNkGRFW3FYRhLYqywm0AyPn0TGKlFKmaTn6tuehNUd1hxgy8Y75A55HY4ftLDPQ+GGKJ4lMhX4D5K92V40Cu106R0TTUQ+ckkg==)
+
 A tool to bypass Unity's CRC32 check for BundleFiles by appending extra data to the end of the file.
 
 一个通过在ab文件末端添加额外数据来绕过Unity的CRC32检查的工具。

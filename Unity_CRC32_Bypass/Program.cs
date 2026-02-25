@@ -1,4 +1,6 @@
-﻿using UnityAsset.NET.BundleFile;
+﻿using UnityAsset.NET.Enums;
+using UnityAsset.NET.Extensions;
+using UnityAsset.NET.Files;
 
 namespace Unity_CRC32_Bypass;
 
@@ -8,10 +10,8 @@ public class Program
     {
         if (args.Length == 1)
         {
-            string FilePath = args[0];
-            using FileStream FileStream = new FileStream(FilePath, FileMode.Open, FileAccess.Read);
-            BundleFile BundleFile = new BundleFile(FileStream);
-            Console.WriteLine($"CRC32: {BundleFile.crc32}");
+            BundleFile BundleFile = new BundleFile(args[0]);
+            Console.WriteLine($"CRC32: {BundleFile.CalculateCrc32()}");
         }
         else if (args.Length <= 3)
         {
@@ -22,25 +22,28 @@ public class Program
         else
         {
             string originalFilePath = args[0];
-                    string modifiedFilePath = args[1];
-                    string outputPath = args[2];
-                    string compressType = args.Length > 3 ? args[3] : "none";
-                    // convert to lower case
-                    compressType = compressType.ToLower();
-                    
-                    using FileStream originalFileStream = new FileStream(originalFilePath, FileMode.Open, FileAccess.Read);
-                    BundleFile originalBundleFile = new BundleFile(originalFileStream);
-                    var originalCrc = originalBundleFile.crc32;
-                    Console.WriteLine($"Original CRC32: {originalCrc}");
-                    
-                    using FileStream modifiedFileStream = new FileStream(modifiedFilePath, FileMode.Open, FileAccess.Read);
-                    BundleFile modifiedBundleFile = new BundleFile(modifiedFileStream);
-                    var modifiedCrc = modifiedBundleFile.crc32;
-                    Console.WriteLine($"Modified CRC32: {modifiedCrc}");
-                    
-                    modifiedBundleFile.crc32 = originalCrc;
-                    using FileStream outputFileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write);
-                    modifiedBundleFile.Write(outputFileStream, infoPacker: "lz4hc", dataPacker: compressType);
+            string modifiedFilePath = args[1];
+            string outputPath = args[2];
+            string compressType = args.Length > 3 ? args[3] : "none";
+            var compressionType = compressType.ToLower() switch
+            {
+                "none" => CompressionType.None,
+                "lz4" => CompressionType.Lz4,
+                "lz4hc" => CompressionType.Lz4HC,
+                "lzma" => CompressionType.Lzma,
+                _ => throw new Exception($"Unsupported Compress type: {compressType}. ")
+            };
+            
+            BundleFile originalBundleFile = new BundleFile(originalFilePath);
+            var originalCrc = originalBundleFile.CalculateCrc32();
+            Console.WriteLine($"Original CRC32: {originalCrc}");
+            
+            BundleFile modifiedBundleFile = new BundleFile(modifiedFilePath);
+            var modifiedCrc = modifiedBundleFile.CalculateCrc32();
+            Console.WriteLine($"Modified CRC32: {modifiedCrc}");
+            
+            modifiedBundleFile.PatchCrc32(modifiedCrc);
+            modifiedBundleFile.Serialize(outputPath, infoPacker: CompressionType.Lz4HC, dataPacker: compressionType);
         }
     }
 }

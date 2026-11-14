@@ -1,19 +1,40 @@
-﻿using UnityAsset.NET.Enums;
+﻿using System.Diagnostics.CodeAnalysis;
+using UnityAsset.NET;
+using UnityAsset.NET.BundleFiles;
 using UnityAsset.NET.Extensions;
-using UnityAsset.NET.Files;
+using UnityAsset.NET.FileSystem;
+using UnityAsset.NET.FileSystem.DirectFileSystem;
 
 namespace Unity_CRC32_Bypass;
 
 public class Program
 {
+    static bool TryGetBundleFromPath(string path, [NotNullWhen(returnValue:true)]out BundleFile? bundleFile)
+    {
+        bundleFile = null;
+        if (!File.Exists(path))
+        {
+            Console.WriteLine($"File not found: {path}");
+            return false;
+        }
+        using var file = new DirectFileInfo(path);
+        if (file.FileType != FileType.BundleFile)
+        {
+            Console.WriteLine($"{path} may not a valid BundleFile!");
+            return false;
+        }
+        bundleFile = new BundleFile(file);
+        return true;
+    }
+    
     public static void Main(string[] args)
     {
         if (args.Length == 1)
         {
-            BundleFile BundleFile = new BundleFile(args[0]);
-            Console.WriteLine($"CRC32: {BundleFile.CalculateCrc32()}");
+            if (!TryGetBundleFromPath(args[0], out var bundleFile)) return;
+            Console.WriteLine($"CRC32: {bundleFile.CalculateCrc32()}");
         }
-        else if (args.Length <= 3)
+        else if (args.Length < 3 || args.Length > 4)
         {
             Console.WriteLine("Usage: <program> <original file path> <modified file path> <output path> <compress type[default: none]>");
             Console.WriteLine("Compress type: none, lz4, lzma, lz4hc");
@@ -34,16 +55,16 @@ public class Program
                 _ => throw new Exception($"Unsupported Compress type: {compressType}. ")
             };
             
-            BundleFile originalBundleFile = new BundleFile(originalFilePath);
+            if (!TryGetBundleFromPath(originalFilePath, out var originalBundleFile)) return;
             var originalCrc = originalBundleFile.CalculateCrc32();
             Console.WriteLine($"Original CRC32: {originalCrc}");
             
-            BundleFile modifiedBundleFile = new BundleFile(modifiedFilePath);
+            if (!TryGetBundleFromPath(modifiedFilePath, out var modifiedBundleFile)) return;
             var modifiedCrc = modifiedBundleFile.CalculateCrc32();
             Console.WriteLine($"Modified CRC32: {modifiedCrc}");
             
-            modifiedBundleFile.PatchCrc32(modifiedCrc);
-            modifiedBundleFile.Serialize(outputPath, infoPacker: CompressionType.Lz4HC, dataPacker: compressionType);
+            modifiedBundleFile.PatchCrc32(originalCrc);
+            modifiedBundleFile.Serialize(outputPath, CompressionType.Lz4HC, compressionType, null);
         }
     }
 }
